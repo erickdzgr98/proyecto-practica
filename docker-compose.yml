@@ -1,12 +1,47 @@
 version: '3.8'
 
 services:
+  db:
+    image: postgres:15-alpine
+    container_name: db_perros
+    restart: always
+    environment:
+      POSTGRES_DB: perros_db
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: securepassword
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "5432:5432"
+
   jupyter:
-    image: jupyter/datascience-notebook:latest
-    container_name: jupyter_servidor
+    image: jupyter/scipy-notebook:latest
+    container_name: jupyter_perros
+    restart: always
+    environment:
+      JUPYTER_TOKEN: tokenperros2026
+    volumes:
+      - ./notebooks:/home/jovyan/work
     ports:
       - "8888:8888"
-    volumes:
-      - .:/home/jovyan/work
+    depends_on:
+      - db
+
+  web:
+    build: ./web
+    container_name: streamlit_perros
+    restart: always
     environment:
-      - JUPYTER_ENABLE_LAB=yes
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: perros_db
+      DB_USER: admin
+      DB_PASSWORD: securepassword
+    ports:
+      - "8501:8501"
+    depends_on:
+      - db
+
+volumes:
+  pgdata:
